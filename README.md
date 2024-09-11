@@ -10,7 +10,8 @@ Before using these dotfiles, please ensure that you have the following installed
 2. Oh My Zsh (Zsh Framework)
 3. Powerlevel10k (Zsh Theme)
 4. Melson (Custom Configuration FONT)
-   Additionally, you will need to install the following essential packages on your OS to support this configuration: `git, fzf, fd, lldb, and ripgrep.` Keep in mind that the package names might differ depending on the Linux distribution you're using, so make sure to install the appropriate packages for your system.
+
+Additionally, you will need to install the following essential packages on your OS to support this configuration: `git, fzf, fd, lldb, and ripgrep.` Keep in mind that the package names might differ depending on the Linux distribution you're using, so make sure to install the appropriate packages for your system.
 
 ### Neovim configuration
 
@@ -20,21 +21,22 @@ For the language server support, this configuration uses [Neovim LSP.](https://g
 
 The configuration utilizes `lazy.nvim` for managing plugins. To ensure everything is working smoothly, you can run the following commands after installation:
 
-`:checkhealth lazy` - Recommended to check the health of the plugins and configurations.
-`:Lazy` - To manage plugins (install, update, clean, etc.).
+- `:checkhealth lazy` - Recommended to check the health of the plugins and configurations.
+- `:Lazy` - To manage plugins (install, update, clean, etc.).
 
 ### Key Mappings
 
 The key mappings follow these conventions based on mode:
 
-`n`: Normal mode
-`v`: Visual and Select modes
-`o`: Operator-pending mode
-`x`: Visual mode only
-`s`: Select mode only
-`i`: Insert mode
-`c`: Command-line mode
-`l`: Insert, Command-line, RegExp-search ("Lang-Arg" pseudo-mode)
+- `n`: Normal mode
+- `v`: Visual and Select modes
+- `o`: Operator-pending mode
+- `x`: Visual mode only
+- `s`: Select mode only
+- `i`: Insert mode
+- `c`: Command-line mode
+- `l`: Insert, Command-line, RegExp-search ("Lang-Arg" pseudo-mode)
+
 The comma (`,` or Space) key is used as the `leader` key. Pressing the leader key in Neovim will show you the available shortcut keys configured for various functionalities.
 
 ### Additional Information
