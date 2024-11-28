@@ -1,35 +1,41 @@
 return {
-  "folke/tokyonight.nvim",
+  "catppuccin/nvim",
   priority = 1000,
   config = function()
-    local transparent = false -- set to true if you would like to enable transparency
+    local transparent = true -- aktifkan transparansi
+    local transparency_level = "33" -- transparansi 80% (80% opacity = 20% transparent)
 
-    local bg = "#011628"
-    local bg_dark = "#011423"
-    local bg_highlight = "#143652"
-    local bg_search = "#0A64AC"
-    local bg_visual = "#275378"
-    local fg = "#CBE0F0"
-    local fg_dark = "#B4D0E9"
-    local fg_gutter = "#627E97"
-    local border = "#547998"
+    -- Variabel warna untuk tema
+    local bg = "#2e1f44" -- Warna latar belakang gelap untuk "frappe"
+    local bg_dark = "#1e1531" -- Warna latar belakang lebih gelap
+    local bg_highlight = "#5c3b6e" -- Warna latar belakang highlight
+    local bg_search = "#7a4b6b" -- Warna latar belakang untuk highlight pencarian
+    local bg_visual = "#6f3b5c" -- Warna latar belakang untuk seleksi visual
+    local fg = "#D9E0EE" -- Warna foreground terang
+    local fg_dark = "#B4B9D5" -- Warna foreground gelap
+    local fg_gutter = "#8A7F99" -- Warna untuk gutter (nomor baris, dll.)
+    local border = "#8A7F99" -- Warna border untuk jendela mengambang
 
-    require("tokyonight").setup({
-      style = "night",
-      transparent = transparent,
-      styles = {
-        sidebars = transparent and "transparent" or "dark",
-        floats = transparent and "transparent" or "dark",
+    -- Menyiapkan tema Catppuccin dengan "frappe" flavour
+    require("catppuccin").setup({
+      flavour = "frappe", -- Pilih "frappe" flavour
+      transparent_background = transparent, -- Aktifkan latar belakang transparan
+      term_colors = true, -- Aktifkan warna terminal
+      integrations = {
+        cmp = true, -- Aktifkan integrasi untuk nvim-cmp
+        treesitter = true, -- Aktifkan integrasi untuk nvim-treesitter
+        lsp = false, -- Nonaktifkan integrasi LSP untuk menghindari kesalahan
+        -- Nonaktifkan integrasi lain jika tidak dibutuhkan
       },
       on_colors = function(colors)
-        colors.bg = bg
-        colors.bg_dark = transparent and colors.none or bg_dark
-        colors.bg_float = transparent and colors.none or bg_dark
+        -- Atur warna latar belakang dan transparansi untuk elemen tertentu
+        colors.bg = transparent and "#2e1f44" .. transparency_level or bg
+        colors.bg_dark = transparent and "#1e1531" .. transparency_level or bg_dark
         colors.bg_highlight = bg_highlight
-        colors.bg_popup = bg_dark
+        colors.bg_popup = transparent and "#1e1531" .. transparency_level or bg_dark
         colors.bg_search = bg_search
-        colors.bg_sidebar = transparent and colors.none or bg_dark
-        colors.bg_statusline = transparent and colors.none or bg_dark
+        colors.bg_sidebar = transparent and "#1e1531" .. transparency_level or bg_dark
+        colors.bg_statusline = transparent and "#1e1531" .. transparency_level or bg_dark
         colors.bg_visual = bg_visual
         colors.border = border
         colors.fg = fg
@@ -40,6 +46,6 @@ return {
       end,
     })
 
-    vim.cmd("colorscheme tokyonight")
+    vim.cmd("colorscheme catppuccin")
   end,
 }
