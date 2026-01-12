@@ -27,17 +27,36 @@
     git
     rustc
     cargo
+    sqlx-cli
     javaPackages.compiler.openjdk17
     lua
+    libiconv
     mkalias
     nixfmt
+    openssl_3
     pnpm
+    pkg-config
     python3
     ripgrep
     rbenv
     uv
   ];
 
+  environment.variables = {
+    LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+      pkgs.libiconv
+      pkgs.openssl_3
+    ];
+    CPATH = pkgs.lib.makeSearchPath "include" [
+      pkgs.libiconv
+      pkgs.openssl_3
+    ];
+    PKG_CONFIG_PATH =
+      pkgs.lib.makeSearchPath "lib/pkgconfig" [ pkgs.openssl_3 ]
+      + ":"
+      + pkgs.lib.makeSearchPath "share/pkgconfig" [ pkgs.openssl_3 ];
+  };
+  
   fonts.packages = [
     pkgs.nerd-fonts.jetbrains-mono
   ];

@@ -15,6 +15,21 @@ let
       byUsername
     else
       ./hosts/derangga.nix;
+
+  rustLibraryPath = pkgs.lib.makeLibraryPath [
+    pkgs.libiconv
+    pkgs.openssl_3
+  ];
+
+  rustCPath = pkgs.lib.makeSearchPath "include" [
+    pkgs.libiconv
+    pkgs.openssl_3
+  ];
+
+  rustPkgConfigPath =
+    pkgs.lib.makeSearchPath "lib/pkgconfig" [ pkgs.openssl_3 ]
+    + ":"
+    + pkgs.lib.makeSearchPath "share/pkgconfig" [ pkgs.openssl_3 ];
 in
 {
   imports = [
@@ -75,6 +90,22 @@ in
           "colors"
         ]
       }
+    '';
+  };
+
+  home.file.".cargo/config.toml" = {
+    text = ''
+      [build]
+      rustflags = [
+        "-L", "native=${pkgs.libiconv}/lib",
+        "-L", "native=${pkgs.openssl_3}/lib",
+      ]
+
+      [env]
+      LIBRARY_PATH = { value = "${rustLibraryPath}", force = true }
+      CPATH = { value = "${rustCPath}", force = true }
+      PKG_CONFIG_PATH = { value = "${rustPkgConfigPath}", force = true }
+      OPENSSL_DIR = { value = "${pkgs.openssl_3}", force = true }
     '';
   };
 
