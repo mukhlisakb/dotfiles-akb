@@ -23,6 +23,7 @@
     ffmpeg
     gcc
     gnupg
+    rustlings
     go
     git
     rustc
