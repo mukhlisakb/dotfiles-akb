@@ -3,6 +3,7 @@ return {
   opts = {
     ensure_installed = {
       "rust-analyzer",
+      "rustfmt",
       "stylua",
       "prettier",
     },

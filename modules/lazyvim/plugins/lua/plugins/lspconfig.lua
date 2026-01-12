@@ -18,7 +18,6 @@ return {
         html = {},
         jsonls = {},
         marksman = {},
-        rust_analyzer = {},
         sqls = {},
         tailwindcss = {},
         ts_ls = {

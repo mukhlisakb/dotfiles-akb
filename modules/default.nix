@@ -111,6 +111,7 @@ in
 
   home.packages = with pkgs; [
     dbeaver-bin
+    nodejs_22
   ];
 
   programs.bat = {
