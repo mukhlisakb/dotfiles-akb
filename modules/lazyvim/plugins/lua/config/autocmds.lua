@@ -21,7 +21,19 @@ autocmd("BufEnter", {
 -- Show diagnostics text on cursor hold
 -- https://github.com/naborisk/dotfiles/blob/383041e06c070d78e4d990b662cfa13d35ce0a64/nvim/after/plugin/nvim-lspconfig.lua#L169-L172
 local lspGroup = vim.api.nvim_create_augroup("Lsp", { clear = true })
+local diagnostic_float_win = nil
 autocmd("CursorHold", {
-  command = "lua vim.diagnostic.open_float()",
+  callback = function()
+    if diagnostic_float_win and vim.api.nvim_win_is_valid(diagnostic_float_win) then
+      return
+    end
+
+    local lnum = vim.api.nvim_win_get_cursor(0)[1] - 1
+    if #vim.diagnostic.get(0, { lnum = lnum }) == 0 then
+      return
+    end
+
+    diagnostic_float_win = vim.diagnostic.open_float(nil, { focus = false, scope = "cursor" })
+  end,
   group = lspGroup,
 })

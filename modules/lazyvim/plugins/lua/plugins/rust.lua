@@ -15,10 +15,10 @@ return {
             -- rust-analyzer language server configuration
             ["rust-analyzer"] = {
               cargo = {
-                allFeatures = true,
+                allFeatures = false,
               },
               -- Add clippy lints for checkOnSave
-              checkOnSave = true,
+              checkOnSave = false,
               procMacro = {
                 enable = true,
               },

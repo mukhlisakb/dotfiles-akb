@@ -112,7 +112,15 @@ in
   home.packages = with pkgs; [
     dbeaver-bin
     nodejs_22
+    flutter
+    cocoapods
   ];
+
+  home.sessionVariables = {
+    ANDROID_HOME = "/Users/${username}/Library/Android/sdk";
+    ANDROID_SDK_ROOT = "/Users/${username}/Library/Android/sdk";
+    CHROME_EXECUTABLE = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  };
 
   programs.bat = {
     enable = true;

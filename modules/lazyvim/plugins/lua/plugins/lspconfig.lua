@@ -52,4 +52,29 @@ return {
       },
     },
   },
+  {
+    "hat0uma/prelive.nvim",
+    cmd = {
+      "PreLiveGo",
+      "PreLiveStatus",
+      "PreLiveClose",
+      "PreLiveCloseAll",
+      "PreLiveLog",
+    },
+    init = function()
+      vim.cmd([[
+        cnoreabbrev <expr> prelive (getcmdtype() == ':' && getcmdline() =~# '^prelive\\>' ? 'PreLiveGo' : 'prelive')
+        cnoreabbrev <expr> prelivestop (getcmdtype() == ':' && getcmdline() =~# '^prelivestop\\>' ? 'PreLiveCloseAll' : 'prelivestop')
+        cnoreabbrev <expr> preliveopen (getcmdtype() == ':' && getcmdline() =~# '^preliveopen\\>' ? 'PreLiveStatus' : 'preliveopen')
+      ]])
+    end,
+    opts = function()
+      return {
+        server = {
+          host = "127.0.0.1",
+          port = 5500,
+        },
+      }
+    end,
+  },
 }

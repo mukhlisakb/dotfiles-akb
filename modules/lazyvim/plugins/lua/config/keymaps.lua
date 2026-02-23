@@ -18,3 +18,7 @@ map("n", "<Esc>b", "<cmd>vertical resize -2<CR>", { desc = "Decrease window widt
 map("n", "<Esc>f", "<cmd>vertical resize +2<CR>", { desc = "Increase window width (alt+arrow right)" })
 map("n", "<M-Up>", "<cmd>resize +2<CR>", { desc = "Increase window height (alt+arrow up)" })
 map("n", "<M-Down>", "<cmd>resize -2<CR>", { desc = "Decrease window height (alt+arrow down)" })
+
+map("n", "<leader>ps", "<cmd>PreLiveGo<CR>", { desc = "Live Server Start" })
+map("n", "<leader>pS", "<cmd>PreLiveCloseAll<CR>", { desc = "Live Server Stop" })
+map("n", "<leader>po", "<cmd>PreLiveStatus<CR>", { desc = "Live Server Open" })

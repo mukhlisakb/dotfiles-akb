@@ -41,6 +41,7 @@
     ripgrep
     rbenv
     uv
+    wget
   ];
 
   environment.variables = {
@@ -75,6 +76,8 @@
       "font-sf-mono"
       "font-sf-pro"
       "ghostty"
+      "google-chrome"
+      "android-studio"
     ];
   };
 
