@@ -1,116 +1,166 @@
 #!/bin/bash
 set -e
 
-# Ensure sudo is available and refresh credentials
+# --- Helper Functions ---
+log() { echo "👉 $1"; }
+warn() { echo "⚠️  $1"; }
+error() { echo "❌ $1"; exit 1; }
+
+# Ensure sudo
 if ! command -v sudo >/dev/null 2>&1; then
-    echo "❌ sudo is required but not found."
-    exit 1
+    error "sudo is required but not found."
 fi
 
-echo "🔐 Requesting sudo permissions for deep cleaning..."
+log "Requesting sudo permissions..."
 sudo -v
-
 # Keep sudo alive
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
 
-echo "🧹 Starting deep cleanup of Nix and Nix-Darwin..."
+# --- 1. Diagnostics ---
+log "Starting Diagnostics..."
 
-# --- 1. Stop Services ---
-echo "🛑 Stopping Nix daemons..."
+check_nix_installed() {
+    if command -v nix >/dev/null 2>&1; then
+        log "Nix is installed: $(nix --version)"
+        return 0
+    else
+        warn "Nix is NOT installed or not in PATH."
+        return 1
+    fi
+}
+
+check_nix_darwin() {
+    if [ -e "/etc/nix-darwin" ] || [ -e "/run/current-system" ]; then
+        warn "Nix-Darwin artifacts detected."
+        return 0
+    else
+        log "No Nix-Darwin artifacts found."
+        return 1
+    fi
+}
+
+check_nix_volume() {
+    if mount | grep -q " on /nix "; then
+        warn "/nix is mounted."
+        return 0
+    else
+        if [ -d "/nix" ]; then
+            warn "/nix exists but is NOT mounted (possibly read-only root artifact)."
+            return 1 # Exists but not mounted
+        else
+            log "/nix does not exist."
+            return 2 # Does not exist
+        fi
+    fi
+}
+
+# --- 2. Fix / Cleanup ---
+log "Starting Cleanup & Fix..."
+
+# Stop Daemons
+log "Stopping Nix daemons..."
 sudo launchctl unload /Library/LaunchDaemons/org.nixos.nix-daemon.plist 2>/dev/null || true
 sudo launchctl unload /Library/LaunchDaemons/systems.determinate.nix-installer.plist 2>/dev/null || true
 sudo rm -f /Library/LaunchDaemons/org.nixos.nix-daemon.plist
 sudo rm -f /Library/LaunchDaemons/systems.determinate.nix-installer.plist
 
-# --- 2. Remove Nix-Darwin Artifacts (Critical for Uninstaller) ---
-echo "🗑️  Removing Nix-Darwin markers..."
+# Remove Nix-Darwin blockers (Must be done before Nix uninstall)
+log "Removing Nix-Darwin artifacts..."
 sudo rm -rf /etc/nix-darwin
 sudo rm -rf /run/current-system
 sudo rm -rf /etc/static
 sudo rm -rf /nix/var/nix/profiles/system
 
-# --- 3. Handle /nix Volume ---
-echo "💾 Handling /nix volume..."
+# Unmount /nix if mounted
 if mount | grep -q " on /nix "; then
-    echo "   Unmounting /nix..."
-    sudo diskutil unmount force /nix || echo "   Warning: Could not unmount /nix"
+    log "Unmounting /nix..."
+    sudo diskutil unmount force /nix || warn "Failed to unmount /nix"
 fi
 
-# Try to find and delete the APFS volume labeled 'Nix Store'
+# Remove 'Nix Store' APFS Volume
 NIX_DISK=$(diskutil list | grep "Nix Store" | awk '{print $NF}')
 if [ -n "$NIX_DISK" ]; then
-    echo "   Deleting APFS volume $NIX_DISK..."
-    sudo diskutil apfs deleteVolume "$NIX_DISK" || echo "   Warning: Could not delete volume $NIX_DISK"
+    log "Removing APFS Volume 'Nix Store' ($NIX_DISK)..."
+    sudo diskutil apfs deleteVolume "$NIX_DISK" || warn "Failed to delete volume"
 fi
 
-# If /nix still exists as a directory (and not a mountpoint), remove it
-if [ -d "/nix" ] && ! mount | grep -q " on /nix "; then
-    echo "   Removing /nix directory..."
-    sudo rm -rf /nix
-fi
-
-# --- 4. Clean Configuration Files ---
-echo "📝 Cleaning system configuration files..."
-
-# /etc/synthetic.conf
+# Clean /etc/synthetic.conf
 if [ -f "/etc/synthetic.conf" ]; then
-    sudo sed -i.bak '/^nix$/d' /etc/synthetic.conf
-    # If empty, remove it
+    log "Cleaning /etc/synthetic.conf..."
+    # Backup
+    sudo cp /etc/synthetic.conf /etc/synthetic.conf.bak
+    # Remove 'nix' line
+    sudo sed -i.bak '/^nix/d' /etc/synthetic.conf
+    # Remove empty file
     if [ ! -s "/etc/synthetic.conf" ]; then
         sudo rm -f "/etc/synthetic.conf"
     fi
 fi
 
-# /etc/fstab
+# Clean /etc/fstab
 if [ -f "/etc/fstab" ]; then
+    log "Cleaning /etc/fstab..."
+    sudo cp /etc/fstab /etc/fstab.bak
     sudo sed -i.bak '/Nix Store/d' /etc/fstab
-    # If empty, remove it
     if [ ! -s "/etc/fstab" ]; then
         sudo rm -f "/etc/fstab"
     fi
 fi
 
-# /etc/nix
-sudo rm -rf /etc/nix
-
-# --- 5. Clean Shell Configs ---
-echo "🐚 Cleaning shell configurations..."
-clean_shell_file() {
+# Clean Shell Configs
+log "Cleaning shell configs..."
+clean_shell() {
     local file="$1"
     if [ -f "$file" ]; then
-        # Check for nix-daemon or nix-darwin hooks
-        if grep -q "nix-daemon.sh" "$file" || grep -q "nix-darwin" "$file"; then
-            echo "   Cleaning $file..."
-            sudo sed -i.bak '/nix-daemon.sh/d' "$file"
-            sudo sed -i.bak '/nix-darwin/d' "$file"
-            sudo sed -i.bak '/# Nix/d' "$file"
-            sudo sed -i.bak '/# End Nix/d' "$file"
-        fi
-        
-        # Restore backup if it exists and original is now empty or just generic
-        local backup="$file.backup-before-nix-darwin"
-        if [ -f "$backup" ]; then
-            echo "   Restoring $file from backup..."
-            sudo mv "$backup" "$file"
-        fi
+        sudo sed -i.bak '/nix-daemon.sh/d' "$file"
+        sudo sed -i.bak '/nix-darwin/d' "$file"
+        sudo sed -i.bak '/# Nix/d' "$file"
+        sudo sed -i.bak '/# End Nix/d' "$file"
     fi
 }
+clean_shell "/etc/zshrc"
+clean_shell "/etc/bashrc"
+clean_shell "/etc/profile"
+clean_shell "$HOME/.zshrc"
+clean_shell "$HOME/.zprofile"
 
-clean_shell_file "/etc/zshrc"
-clean_shell_file "/etc/bashrc"
-clean_shell_file "/etc/profile"
-# Also check user dotfiles lightly (optional, but good for completeness)
-# clean_shell_file "$HOME/.zshrc"
-# clean_shell_file "$HOME/.bashrc"
-# clean_shell_file "$HOME/.zprofile"
+# Remove /nix directory (if possible)
+# Note: On macOS Catalina+, root is read-only. We can't rm -rf /nix if it's on root.
+# But if it was synthetic, removing it from synthetic.conf + reboot usually clears it.
+# We can try to remove it just in case it's on Data volume.
+if [ -d "/nix" ]; then
+    log "Attempting to remove /nix directory..."
+    sudo rm -rf /nix 2>/dev/null || warn "Could not remove /nix (expected if on Read-Only root). It should be gone after reboot or hidden by new mount."
+fi
 
-# --- 6. Remove Users/Groups (Optional but cleaner) ---
-echo "bust_cache" # dummy echo to ensure next command runs
-# Nix installer usually creates _nixbld groups and users. 
-# We'll leave them for now as they don't block re-installation usually, 
-# and removing them is tedious/risky.
+# --- 3. Install Nix ---
+log "Installing Nix (Determinate Systems)..."
+# Using Determinate Systems installer because it's robust and handles macOS volumes well
+if curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm; then
+    log "✅ Nix installed successfully!"
+else
+    error "❌ Nix installation failed."
+fi
 
-echo "✅ Deep cleanup complete."
-echo "🔄 Restarting installation..."
+# Source nix for current session
+if [ -e "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh" ]; then
+    . "/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh"
+fi
 
-./install.sh
+# --- 4. Install Nix-Darwin ---
+log "Installing Nix-Darwin..."
+
+# Check if we have the flake
+if [ ! -f "flake.nix" ]; then
+    error "flake.nix not found in current directory!"
+fi
+
+# Run the install command
+log "Running darwin-rebuild..."
+if nix --extra-experimental-features "nix-command flakes" run nix-darwin -- switch --flake .#Vandaliciouss-MacBook-Pro; then
+    log "✅ Nix-Darwin installed successfully!"
+else
+    error "❌ Nix-Darwin installation failed."
+fi
+
+log "🎉 All done! Please restart your terminal."
